@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}New Analysis - B1T Web Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-plus me-2"></i>New Blockchain Analysis
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>Analysis Parameters
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('submit_job') }}" id="analysisForm">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="name" class="form-label">Job Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required
+                                   placeholder="e.g. Analysis Block 100000-110000">
+                            <div class="form-text">Unique name for this analysis</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_block" class="form-label">
+                                <i class="fas fa-play me-1"></i>Start Block *
+                            </label>
+                            <input type="number" class="form-control" id="start_block" name="start_block" 
+                                   required min="0" value="0">
+                            <div class="form-text">Block number where the analysis should start</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_block" class="form-label">
+                                <i class="fas fa-stop me-1"></i>End Block *
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="auto-fill-btn">
+                                    <i class="fas fa-magic me-1"></i>Auto-fill
+                                </button>
+                            </label>
+                            <input type="number" class="form-control" id="end_block" name="end_block" 
+                                   required min="1" value="64350">
+                            <div class="form-text">Block number where the analysis should end (use Auto-fill for current blockchain height)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="batch_size" class="form-label">
+                                <i class="fas fa-layer-group me-1"></i>Batch Size
+                            </label>
+                            <input type="number" class="form-control" id="batch_size" name="batch_size" 
+                                   min="1" max="10000" value="1000">
+                            <div class="form-text">Number of blocks to process simultaneously (default: 1000)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="min_zeros" class="form-label">
+                                <i class="fas fa-search me-1"></i>Minimum Leading Zeros
+                            </label>
+                            <select class="form-control" id="min_zeros" name="min_zeros">
+                                <option value="1">1 (0x...)</option>
+                                <option value="2" selected>2 (00x...)</option>
+                                <option value="3">3 (000x...)</option>
+                                <option value="4">4 (0000x...)</option>
+                                <option value="5">5 (00000x...)</option>
+                                <option value="6">6 (000000x...)</option>
+                                <option value="7">7 (0000000x...)</option>
+                                <option value="8">8 (00000000x...)</option>
+                            </select>
+                            <div class="form-text">Minimum number of leading zeros in transaction hashes</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="min_inputs" class="form-label">
+                                <i class="fas fa-arrow-right me-1"></i>Minimum Inputs
+                            </label>
+                            <input type="number" class="form-control" id="min_inputs" name="min_inputs" 
+                                   min="1" value="1">
+                            <div class="form-text">Minimum number of inputs for multi-input transactions</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show_all_zeros" name="show_all_zeros">
+                                <label class="form-check-label" for="show_all_zeros">
+                                    Show all transactions with leading zeros
+                                </label>
+                                <div class="form-text">Shows all found transactions with at least the specified number of leading zeros</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="exclude_coinbase" name="exclude_coinbase" checked>
+                                <label class="form-check-label" for="exclude_coinbase">
+                                    Exclude coinbase transactions from results
+                                </label>
+                                <div class="form-text">Coinbase transactions have no real inputs and are typically filtered out (recommended)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">
+                                    <i class="fas fa-arrow-left me-1"></i>Back
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="fas fa-play me-1"></i>Start Analysis
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Analysis Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>What will be analyzed?</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>Transactions with leading zeros</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Multi-input transactions</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Special transactions (combination)</li>
+                </ul>
+                
+                <h6 class="mt-3">Performance Notes</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-lightning text-warning me-2"></i>RPC-based (~970 blocks/sec)</li>
+                    <li><i class="fas fa-memory text-info me-2"></i>Batch processing for efficiency</li>
+                    <li><i class="fas fa-database text-primary me-2"></i>Results stored in SQLite</li>
+                </ul>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Tip:</strong> For large block ranges (>10,000 blocks), a batch size of 1000 or more is recommended.
+                </div>
+                
+                {% if blockchain_info %}
+                <div class="alert alert-success mt-3">
+                    <i class="fas fa-link me-2"></i>
+                    <strong>Blockchain Status:</strong><br>
+                    Current Height: {{ blockchain_info.height|default('Unknown') }}<br>
+                    Network: {{ blockchain_info.chain|default('Unknown') }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>Estimation
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="estimation">
+                    <p class="mb-2">
+                        <strong>Blocks:</strong> <span id="block-count">1001</span>
+                    </p>
+                    <p class="mb-2">
+                        <strong>Estimated Time:</strong> <span id="estimated-time">~1 second</span>
+                    </p>
+                    <p class="mb-0">
+                        <strong>Batches:</strong> <span id="batch-count">2</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateEstimation() {
+    const startBlock = parseInt(document.getElementById('start_block').value) || 0;
+    const endBlock = parseInt(document.getElementById('end_block').value) || 0;
+    const batchSize = parseInt(document.getElementById('batch_size').value) || 1000;
+    
+    const blockCount = Math.max(0, endBlock - startBlock + 1);
+    const batchCount = Math.ceil(blockCount / batchSize);
+    const estimatedSeconds = Math.ceil(blockCount / 970); // ~970 blocks/sec
+    
+    let timeText;
+    if (estimatedSeconds < 60) {
+        timeText = `~${estimatedSeconds} second${estimatedSeconds !== 1 ? 's' : ''}`;
+    } else if (estimatedSeconds < 3600) {
+        const minutes = Math.ceil(estimatedSeconds / 60);
+        timeText = `~${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+        const hours = Math.ceil(estimatedSeconds / 3600);
+        timeText = `~${hours} hour${hours !== 1 ? 's' : ''}`;
+    }
+    
+    document.getElementById('block-count').textContent = blockCount.toLocaleString();
+    document.getElementById('estimated-time').textContent = timeText;
+    document.getElementById('batch-count').textContent = batchCount.toLocaleString();
+}
+
+// Auto-fill end block with current blockchain height
+function autoFillEndBlock() {
+    const button = document.getElementById('auto-fill-btn');
+    const endBlockInput = document.getElementById('end_block');
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+    button.disabled = true;
+    
+    fetch('/api/blockchain_info')
+        .then(response => response.json())
+        .then(data => {
+            if (data.height) {
+                endBlockInput.value = data.height;
+                updateEstimation();
+                updateJobName();
+            } else {
+                alert('Could not fetch current blockchain height. Please check RPC connection.');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching blockchain info:', error);
+            alert('Error fetching blockchain height. Please try again.');
+        })
+        .finally(() => {
+            button.innerHTML = '<i class="fas fa-magic me-1"></i>Auto-fill';
+            button.disabled = false;
+        });
+}
+
+// Update estimation when inputs change
+document.getElementById('start_block').addEventListener('input', updateEstimation);
+document.getElementById('end_block').addEventListener('input', updateEstimation);
+document.getElementById('batch_size').addEventListener('input', updateEstimation);
+
+// Auto-fill button event listener
+document.getElementById('auto-fill-btn').addEventListener('click', autoFillEndBlock);
+
+// Form validation
+document.getElementById('analysisForm').addEventListener('submit', function(e) {
+    const startBlock = parseInt(document.getElementById('start_block').value);
+    const endBlock = parseInt(document.getElementById('end_block').value);
+    
+    if (startBlock >= endBlock) {
+        e.preventDefault();
+        alert('Start block must be smaller than end block!');
+        return false;
+    }
+    
+    if (endBlock - startBlock > 1000000) {
+        if (!confirm('You want to analyze more than 1 million blocks. This may take a very long time. Continue?')) {
+            e.preventDefault();
+            return false;
+        }
+    }
+    
+    // Disable submit button to prevent double submission
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Starting...';
+});
+
+// Auto-generate job name
+document.getElementById('start_block').addEventListener('input', updateJobName);
+document.getElementById('end_block').addEventListener('input', updateJobName);
+
+function updateJobName() {
+    const nameField = document.getElementById('name');
+    if (nameField.value === '' || nameField.value.startsWith('Analysis Block ')) {
+        const startBlock = document.getElementById('start_block').value;
+        const endBlock = document.getElementById('end_block').value;
+        if (startBlock && endBlock) {
+            nameField.value = `Analysis Block ${startBlock}-${endBlock}`;
+        }
+    }
+}
+
+// Initial estimation update
+updateEstimation();
+</script>
+{% endblock %}

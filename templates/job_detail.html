@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+
+{% block title %}Job Details - B1T Web Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-file-alt me-2"></i>{{ job[1] }}
+            </h1>
+            <div>
+                <a href="{{ url_for('jobs_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to List
+            </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Job Status Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Job Information
+                </h5>
+                <div>
+                    {% if job[6] == 'pending' %}
+                        <span class="badge bg-secondary fs-6">Pending</span>
+                    {% elif job[6] == 'running' %}
+                        <span class="badge bg-primary fs-6">Running</span>
+                    {% elif job[6] == 'completed' %}
+                        <span class="badge bg-success fs-6">Completed</span>
+                    {% elif job[6] == 'failed' %}
+                        <span class="badge bg-danger fs-6">Failed</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Job ID:</strong></td>
+                            <td>{{ job[0] }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>{{ job[1] }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Block Range:</strong></td>
+                            <td>{{ job[2] }} - {{ job[3] }} ({{ job[3] - job[2] + 1 }} blocks)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Batch Size:</strong></td>
+                            <td>{{ job[4] }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Show All Zeros:</strong></td>
+                            <td>
+                                {% if job[8] %}
+                                    <i class="fas fa-check text-success"></i> Yes
+                                {% else %}
+                                    <i class="fas fa-times text-danger"></i> No
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created:</strong></td>
+                            <td>{{ job[9] }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Started:</strong></td>
+                            <td>{{ job[10] or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Completed:</strong></td>
+                            <td>{{ job[11] or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Bar for Running Jobs -->
+{% if job[6] == 'running' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-line me-2"></i>Progress
+                </h5>
+                <div class="progress mb-2">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: {{ analysis_status.progress }}%" 
+                         id="progress-bar">
+                        {{ analysis_status.progress }}%
+                    </div>
+                </div>
+                <small class="text-muted" id="progress-details">
+                            Block {{ analysis_status.current_block }} of {{ analysis_status.total_blocks }}
+                        </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Error Message -->
+{% if job[12] %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Error
+                </h5>
+            </div>
+            <div class="card-body">
+                <pre class="mb-0">{{ job[12] }}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Results -->
+{% if results %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Analysis Results
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if results.parsed %}
+                    <!-- Analysis Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h3>{{ "{:,}".format(results.parsed.blocks_analyzed) }}</h3>
+                            <p class="mb-0">Blocks Analyzed</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h3>{{ "{:,}".format(results.parsed.transactions_analyzed) }}</h3>
+                            <p class="mb-0">Transactions</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h3>{{ results.parsed.zero_transactions }}</h3>
+                            <p class="mb-0">Zero Transactions</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h3>{{ results.parsed.special_transactions }}</h3>
+                            <p class="mb-0">Special Transactions</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Metrics -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Analysis Time</h5>
+                                    <h3 class="text-primary">{{ "%.2f"|format(results.parsed.analysis_time) }}s</h3>
+                                    <small class="text-muted">
+                                        Phase 1: {{ "%.2f"|format(results.parsed.phase1_time) }}s<br>
+                                        Phase 2: {{ "%.2f"|format(results.parsed.phase2_time) }}s
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Speed</h5>
+                            <h3 class="text-info">{{ "%.2f"|format(results.parsed.rate) }}</h3>
+                            <small class="text-muted">Blocks/Second</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Status</h5>
+                                    <h4 class="text-{{ 'success' if results.return_code == 0 else 'danger' }}">
+                                        {% if results.return_code == 0 %}
+                                            <i class="fas fa-check-circle"></i> Successful
+                            {% else %}
+                                <i class="fas fa-times-circle"></i> Failed
+                                        {% endif %}
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Transaction Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td>Coinbase Transactions:</td>
+                            <td><span class="badge bg-secondary">{{ results.parsed.coinbase_transactions }}</span></td>
+                        </tr>
+                        <tr>
+                            <td>Multi-Input Transactions:</td>
+                            <td><span class="badge bg-info">{{ results.parsed.multi_input_transactions }}</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Zero-Aufschlüsselung</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if results.parsed.zero_breakdown %}
+                                        <table class="table table-sm">
+                                            {% for zeros, count in results.parsed.zero_breakdown.items() %}
+                                            <tr>
+                                                <td>{{ zeros }} leading zeros:</td>
+                                <td><span class="badge bg-warning">{{ count }} transactions</span></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    {% else %}
+                                        <p class="text-muted mb-0">No zero transactions found</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Special Transactions -->
+                    {% if results.parsed.special_transaction_details %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-star me-2"></i>Special Transactions
+                                        <span class="badge bg-success ms-2">{{ results.parsed.special_transactions }}</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="transactionsTable">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>
+                                                        Block
+                                                        <button class="btn btn-sm btn-outline-light ms-2" onclick="sortTable('block', 'asc')" title="Kleinster Block oben">
+                                                            <i class="fas fa-sort-numeric-down"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-light" onclick="sortTable('block', 'desc')" title="Größter Block oben">
+                                                            <i class="fas fa-sort-numeric-up"></i>
+                                                        </button>
+                                                    </th>
+                                                    <th>Transaction Hash</th>
+                                                    <th>Details</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="transactionsTableBody">
+                                                {% for tx in results.parsed.special_transaction_details %}
+                                                <tr data-block="{{ tx.block }}">
+                                                    <td>
+                                                        <span class="badge bg-primary">#{{ tx.block }}</span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="https://b1texplorer.com/tx/{{ tx.hash }}" target="_blank" class="text-decoration-none">
+                                                            <code class="text-break text-primary">{{ tx.hash }}</code>
+                                                            <i class="fas fa-external-link-alt ms-1" style="font-size: 0.8em;"></i>
+                                                        </a>
+                                                    </td>
+                                                    <td>
+                                                        <small class="text-muted">{{ tx.details }}</small>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Raw Output (Collapsible) -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#rawOutput">
+                                            <i class="fas fa-code me-2"></i>Show Raw Output
+                                        </button>
+                                    </h6>
+                                </div>
+                                <div class="collapse" id="rawOutput">
+                                    <div class="card-body">
+                                        {% if results.output %}
+                                            <div class="mb-3">
+                                                <h6>Output:</h6>
+                                                <div class="bg-light p-3 rounded">
+                                                    <pre class="mb-0" style="white-space: pre-wrap;">{{ results.output }}</pre>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% if results.stderr %}
+                                            <div class="mb-3">
+                                                <h6>Error Output:</h6>
+                                                <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                                    <pre class="mb-0" style="white-space: pre-wrap;">{{ results.stderr }}</pre>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Fallback for unparsed results -->
+                    {% if results.output %}
+                        <div class="mb-3">
+                            <h6>Ausgabe:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <pre class="mb-0" style="white-space: pre-wrap;">{{ results.output }}</pre>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if results.stderr %}
+                        <div class="mb-3">
+                            <h6>Error Output:</h6>
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <pre class="mb-0" style="white-space: pre-wrap;">{{ results.stderr }}</pre>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Return Code</h5>
+                                    <h2 class="text-{{ 'success' if results.return_code == 0 else 'danger' }}">
+                                        {{ results.return_code }}
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Status</h5>
+                                    <h4 class="text-{{ 'success' if results.return_code == 0 else 'danger' }}">
+                                        {% if results.return_code == 0 %}
+                                            <i class="fas fa-check-circle"></i> Successful
+                            {% else %}
+                                <i class="fas fa-times-circle"></i> Failed
+                                        {% endif %}
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-primary w-100" onclick="location.reload()">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('new_job') }}" class="btn btn-success w-100">
+                            <i class="fas fa-plus me-2"></i>Neuer Job
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('jobs_list') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-list me-2"></i>All Jobs
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-danger w-100" onclick="deleteAllJobs()">
+                            <i class="fas fa-trash me-2"></i>Delete All Jobs
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh for running jobs
+{% if job[6] == 'running' %}
+function updateProgress() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            const progressBar = document.getElementById('progress-bar');
+            const progressDetails = document.getElementById('progress-details');
+            
+            if (progressBar) {
+                progressBar.style.width = data.progress + '%';
+                progressBar.textContent = data.progress + '%';
+            }
+            
+            if (progressDetails) {
+                progressDetails.textContent = `Block ${data.current_block} von ${data.total_blocks}`;
+            }
+            
+            // If analysis completed, reload page to show results
+            if (!data.running) {
+                setTimeout(() => location.reload(), 2000);
+            }
+        })
+        .catch(error => console.error('Error updating progress:', error));
+}
+
+// Update progress every 2 seconds
+setInterval(updateProgress, 2000);
+{% endif %}
+
+// Function to sort the transactions table
+function sortTable(column, direction) {
+    const tbody = document.getElementById('transactionsTableBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        if (column === 'block') {
+            const blockA = parseInt(a.getAttribute('data-block'));
+            const blockB = parseInt(b.getAttribute('data-block'));
+            
+            if (direction === 'asc') {
+                return blockA - blockB;
+            } else {
+                return blockB - blockA;
+            }
+        }
+        return 0;
+    });
+    
+    // Clear tbody and append sorted rows
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Function to delete all jobs
+function deleteAllJobs() {
+    if (confirm('Are you sure you want to delete all jobs? This action cannot be undone.')) {
+        fetch('/api/delete_all_jobs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('All jobs have been successfully deleted.');
+                window.location.href = '{{ url_for("index") }}';
+            } else {
+                alert('Error deleting jobs: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting jobs:', error);
+            alert('Error deleting jobs: ' + error.message);
+        });
+    }
+}
+
+// Initialize table sorting on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Sort by block descending (kleinster Block unten) by default
+    if (document.getElementById('transactionsTable')) {
+        sortTable('block', 'desc');
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}All Jobs - B1T Web Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-list me-2"></i>All Analysis Jobs
+            </h1>
+            <div>
+                <a href="{{ url_for('new_job') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>New Job
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter and Search -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="statusFilter" class="form-label">Filter by Status:</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="running">Running</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="searchInput" class="form-label">Search:</label>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Job name or block range...">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button class="btn btn-outline-secondary me-2" onclick="clearFilters()">
+                            <i class="fas fa-times me-1"></i>Clear Filters
+                        </button>
+                        <!-- Hidden admin button - requires triple click to activate -->
+                        <button class="btn btn-outline-danger" id="deleteAllBtn" onclick="handleDeleteAll()" style="opacity: 0.1; font-size: 10px;" title="Admin: Delete All Jobs">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Jobs Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>Jobs Overview
+                </h5>
+                <span class="badge bg-primary" id="jobCount">{{ jobs|length }} Jobs</span>
+            </div>
+            <div class="card-body">
+                {% if jobs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="jobsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Block Range</th>
+                                    <th>Blocks</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Completed</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for job in jobs %}
+                                <tr data-status="{{ job[6] }}" data-name="{{ job[1].lower() }}" data-blocks="{{ job[2] }}-{{ job[3] }}">
+                                    <td>
+                                        <span class="badge bg-secondary">#{{ job[0] }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('job_detail', job_id=job[0]) }}" class="text-decoration-none fw-bold">
+                                            {{ job[1] }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <code>{{ job[2] }} - {{ job[3] }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ "{:,}".format(job[3] - job[2] + 1) }}</span>
+                                    </td>
+                                    <td>
+                                        {% if job[6] == 'pending' %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                        {% elif job[6] == 'queued' %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-hourglass-half me-1"></i>Queued
+                                            </span>
+                                        {% elif job[6] == 'running' %}
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-spinner fa-spin me-1"></i>Running
+                                            </span>
+                                        {% elif job[6] == 'completed' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Completed
+                                            </span>
+                                        {% elif job[6] == 'failed' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>Failed
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ job[7] }}</small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ job[9] or 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        {% if job[9] and job[7] %}
+                                            {% set start_time = job[7] %}
+                                            {% set end_time = job[9] %}
+                                            <small class="text-muted">
+                                                <!-- Duration calculation would need to be done in Python -->
+                                                <i class="fas fa-clock me-1"></i>Calculated
+                                            </small>
+                                        {% else %}
+                                            <small class="text-muted">N/A</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('job_detail', job_id=job[0]) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Show Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if job[6] == 'completed' %}
+                                                <button class="btn btn-outline-success" 
+                                                        title="Download Results"
+                                                        onclick="downloadResults({{ job[0] }})">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Jobs Available</h4>
+                        <p class="text-muted mb-4">Create your first analysis job to get started.</p>
+                        <a href="{{ url_for('new_job') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create First Job
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Card -->
+{% if jobs %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h3 class="text-primary" id="totalJobs">{{ jobs|length }}</h3>
+                            <p class="text-muted mb-0">Total Jobs</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h3 class="text-success" id="completedJobs">
+                                {{ jobs|selectattr('6', 'equalto', 'completed')|list|length }}
+                            </h3>
+                            <p class="text-muted mb-0">Completed</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h3 class="text-primary" id="runningJobs">
+                                {{ jobs|selectattr('6', 'equalto', 'running')|list|length }}
+                            </h3>
+                            <p class="text-muted mb-0">Running</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-danger" id="failedJobs">
+                            {{ jobs|selectattr('6', 'equalto', 'failed')|list|length }}
+                        </h3>
+                        <p class="text-muted mb-0">Failed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filter and search functionality
+function filterJobs() {
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#jobsTable tbody tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const status = row.getAttribute('data-status');
+        const name = row.getAttribute('data-name');
+        const blocks = row.getAttribute('data-blocks');
+        
+        const statusMatch = !statusFilter || status === statusFilter;
+        const searchMatch = !searchInput || 
+                           name.includes(searchInput) || 
+                           blocks.includes(searchInput);
+        
+        if (statusMatch && searchMatch) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('jobCount').textContent = `${visibleCount} Jobs`;
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('searchInput').value = '';
+    filterJobs();
+}
+
+function downloadResults(jobId) {
+    // This would need to be implemented to download job results
+    alert('Download function will be implemented...');
+}
+
+// Event listeners
+document.getElementById('statusFilter').addEventListener('change', filterJobs);
+document.getElementById('searchInput').addEventListener('input', filterJobs);
+
+// Auto-refresh for running jobs
+function updateRunningJobs() {
+    const runningRows = document.querySelectorAll('tr[data-status="running"]');
+    if (runningRows.length > 0) {
+        // Reload page if there are running jobs to update their status
+        setTimeout(() => location.reload(), 10000); // Reload every 10 seconds
+    }
+}
+
+// Delete all jobs functionality (admin)
+let deleteClickCount = 0;
+let deleteClickTimer = null;
+
+function handleDeleteAll() {
+    deleteClickCount++;
+    
+    if (deleteClickTimer) {
+        clearTimeout(deleteClickTimer);
+    }
+    
+    deleteClickTimer = setTimeout(() => {
+        deleteClickCount = 0;
+    }, 2000); // Reset counter after 2 seconds
+    
+    if (deleteClickCount >= 3) {
+        deleteClickCount = 0;
+        clearTimeout(deleteClickTimer);
+        
+        if (confirm('ADMIN WARNING: This will delete ALL jobs permanently. Are you absolutely sure?')) {
+            if (confirm('This action cannot be undone. Delete ALL jobs?')) {
+                deleteAllJobs();
+            }
+        }
+    }
+}
+
+function deleteAllJobs() {
+    const deleteBtn = document.getElementById('deleteAllBtn');
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    fetch('/api/delete_all_jobs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('All jobs deleted successfully!');
+            location.reload();
+        } else {
+            alert('Error deleting jobs: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    })
+    .finally(() => {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+    });
+}
+
+// Check for running jobs on page load
+updateRunningJobs();
+</script>
+{% endblock %}

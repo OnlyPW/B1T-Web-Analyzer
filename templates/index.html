@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - B1T Web Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Status Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Status</h5>
+                        <p class="card-text" id="current-status">
+                            {% if analysis_status.running %}
+                                <i class="fas fa-spinner fa-spin me-1"></i>Running
+                            {% else %}
+                                <i class="fas fa-check-circle me-1"></i>Ready
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-info-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Progress</h5>
+                        <p class="card-text" id="progress-text">
+                            {{ analysis_status.progress }}%
+                        </p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Current Block</h5>
+                        <p class="card-text" id="current-block">
+                            {{ analysis_status.current_block or 'N/A' }}
+                        </p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-cube fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Total Blocks</h5>
+                        <p class="card-text" id="total-blocks">
+                            {{ analysis_status.total_blocks or 'N/A' }}
+                        </p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-cubes fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Job Queue Section -->
+<div class="row mb-4" id="queue-section">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-list-ol me-2"></i>Job Queue
+                    <span class="badge bg-secondary ms-2" id="queue-count">0</span>
+                </h5>
+                <div id="queue-content">
+                    <div class="text-center py-3 text-muted" id="queue-empty">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p class="mb-0">No jobs in queue</p>
+                    </div>
+                    <div id="current-job" style="display: none;">
+                        <div class="alert alert-info mb-3">
+                            <h6 class="alert-heading mb-2">
+                                <i class="fas fa-play me-2"></i>Currently Running
+                            </h6>
+                            <p class="mb-0" id="current-job-info">Job Name - Blocks X-Y</p>
+                        </div>
+                    </div>
+                    <div id="queue-list" style="display: none;">
+                        <h6 class="mb-3">Queued Jobs:</h6>
+                        <div class="list-group" id="queue-items">
+                            <!-- Queue items will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="row mb-4" id="progress-section" style="{% if not analysis_status.running %}display: none;{% endif %}">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Analysis Progress</h5>
+                <div class="progress mb-2">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: {{ analysis_status.progress }}%" 
+                         id="progress-bar">
+                        {{ analysis_status.progress }}%
+                    </div>
+                </div>
+                <small class="text-muted" id="progress-details">
+                    Block {{ analysis_status.current_block }} of {{ analysis_status.total_blocks }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="{{ url_for('new_job') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-plus me-2"></i>Start New Analysis
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{{ url_for('jobs_list') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-list me-2"></i>View All Jobs
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <button class="btn btn-danger w-100" onclick="deleteAllJobs()">
+                            <i class="fas fa-trash me-2"></i>Delete All Jobs
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Jobs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Analysis Jobs
+                </h5>
+                <a href="{{ url_for('jobs_list') }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_jobs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Block Range</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Completed</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for job in recent_jobs %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('job_detail', job_id=job[0]) }}" class="text-decoration-none">
+                                            {{ job[1] }}
+                                        </a>
+                                    </td>
+                                    <td>{{ job[2] }} - {{ job[3] }}</td>
+                                    <td>
+                                        {% if job[4] == 'pending' %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                        {% elif job[4] == 'queued' %}
+                                            <span class="badge bg-warning">Queued</span>
+                                        {% elif job[4] == 'running' %}
+                                            <span class="badge bg-primary">Running</span>
+                                        {% elif job[4] == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif job[4] == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ job[5] }}</td>
+                                    <td>{{ job[6] or 'N/A' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('job_detail', job_id=job[0]) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No analysis jobs available yet.</p>
+                        <a href="{{ url_for('new_job') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create First Job
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh status every 2 seconds if analysis is running
+function updateStatus() {
+    // Fetch both analysis status and queue status
+    Promise.all([
+        fetch('/api/analysis_status').then(r => r.json()),
+        fetch('/api/queue_status').then(r => r.json())
+    ])
+        .then(([analysisData, queueData]) => {
+            updateAnalysisStatus(analysisData);
+            updateQueueStatus(analysisData, queueData);
+        })
+        .catch(error => console.error('Error updating status:', error));
+}
+
+function updateAnalysisStatus(data) {
+            // Update status elements
+            const currentStatus = document.getElementById('current-status');
+            const progressText = document.getElementById('progress-text');
+            const currentBlock = document.getElementById('current-block');
+            const totalBlocks = document.getElementById('total-blocks');
+            const progressBar = document.getElementById('progress-bar');
+            const progressDetails = document.getElementById('progress-details');
+            const progressSection = document.getElementById('progress-section');
+            
+            if (data.running) {
+                // Show progress section
+                if (progressSection) {
+                    progressSection.style.display = 'block';
+                }
+                
+                if (currentStatus) {
+                    let statusText = 'Running';
+                    if (data.phase) {
+                        statusText += ` (${data.phase})`;
+                    }
+                    currentStatus.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i>${statusText}`;
+                }
+                
+                // Update progress bar
+                if (progressBar) {
+                    progressBar.style.width = data.progress + '%';
+                    progressBar.textContent = Math.round(data.progress) + '%';
+                }
+                
+                // Update progress details
+                if (progressDetails) {
+                    let detailText = `Block ${data.current_block} of ${data.total_blocks}`;
+                    if (data.blocks_processed) {
+                        detailText += ` (${data.blocks_processed} processed)`;
+                    }
+                    if (data.phase) {
+                        detailText += ` - ${data.phase}`;
+                    }
+                    progressDetails.textContent = detailText;
+                }
+            } else {
+                // Hide progress section when not running
+                if (progressSection) {
+                    progressSection.style.display = 'none';
+                }
+                currentStatus.innerHTML = '<i class="fas fa-check-circle me-1"></i>Ready';
+            }
+            
+            // Always update card values with live data
+            if (progressText) progressText.textContent = Math.round(data.progress) + '%';
+            if (currentBlock) {
+                if (data.running && data.current_block > 0) {
+                    currentBlock.textContent = data.current_block.toLocaleString();
+                } else {
+                    currentBlock.textContent = 'N/A';
+                }
+            }
+            if (totalBlocks) {
+                if (data.running && data.total_blocks > 0) {
+                    totalBlocks.textContent = data.total_blocks.toLocaleString();
+                } else {
+                    totalBlocks.textContent = 'N/A';
+                }
+            }
+            
+            // If analysis completed, reload page to show updated job list
+            if (!data.running && data.progress === 100) {
+                setTimeout(() => location.reload(), 2000);
+            }
+}
+
+function updateQueueStatus(analysisData, queueData) {
+    const queueCount = document.getElementById('queue-count');
+    const queueEmpty = document.getElementById('queue-empty');
+    const currentJob = document.getElementById('current-job');
+    const currentJobInfo = document.getElementById('current-job-info');
+    const queueList = document.getElementById('queue-list');
+    const queueItems = document.getElementById('queue-items');
+    
+    // Update queue count
+    if (queueCount) {
+        queueCount.textContent = queueData.queue_length || 0;
+    }
+    
+    // Show/hide current job
+    if (analysisData.running && analysisData.current_job_name) {
+        if (currentJob) currentJob.style.display = 'block';
+        if (currentJobInfo) {
+            currentJobInfo.textContent = `${analysisData.current_job_name} - Blocks ${analysisData.current_block}-${analysisData.total_blocks}`;
+        }
+        if (queueEmpty) queueEmpty.style.display = 'none';
+    } else {
+        if (currentJob) currentJob.style.display = 'none';
+    }
+    
+    // Show/hide queue list
+    if (queueData.queue_length > 0) {
+        if (queueList) queueList.style.display = 'block';
+        if (queueEmpty) queueEmpty.style.display = 'none';
+        
+        // Populate queue items
+        if (queueItems) {
+            queueItems.innerHTML = '';
+            queueData.jobs.forEach((job, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.innerHTML = `
+                    <div>
+                        <strong>${job.name}</strong>
+                        <br>
+                        <small class="text-muted">Blocks ${job.start_block.toLocaleString()} - ${job.end_block.toLocaleString()}</small>
+                    </div>
+                    <span class="badge bg-warning rounded-pill">#${index + 1}</span>
+                `;
+                queueItems.appendChild(item);
+            });
+        }
+    } else {
+        if (queueList) queueList.style.display = 'none';
+        if (!analysisData.running) {
+            if (queueEmpty) queueEmpty.style.display = 'block';
+        }
+    }
+}
+
+// Update status every 2 seconds
+setInterval(updateStatus, 2000);
+
+// Function to delete all jobs
+function deleteAllJobs() {
+    if (confirm('Are you sure you want to delete all jobs? This action cannot be undone.')) {
+        fetch('/api/delete_all_jobs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('All jobs have been successfully deleted.');
+                location.reload();
+            } else {
+                alert('Error deleting jobs: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting jobs:', error);
+            alert('Error deleting jobs: ' + error.message);
+        });
+    }
+}
+</script>
+{% endblock %}
