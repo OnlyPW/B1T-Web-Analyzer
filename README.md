@@ -28,8 +28,8 @@ Eine webbasierte Anwendung zur Analyse von Bitcoin-Transaktionen mit RPC-Verbind
    RPC_TIMEOUT=30
    ```
 
-3. **Bitcoin-Node konfigurieren:**
-   Stellen Sie sicher, dass Ihr `bitcoin.conf` folgende Einstellungen enthält:
+3. **B1T-Node konfigurieren:**
+   Stellen Sie sicher, dass Ihr `bit.conf` folgende Einstellungen enthält:
    ```
    server=1
    rpcuser=your_username
